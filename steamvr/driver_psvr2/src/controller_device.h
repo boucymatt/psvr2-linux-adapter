@@ -12,7 +12,7 @@ class Psvr2ControllerDriver : public vr::ITrackedDeviceServerDriver
 {
 public:
     Psvr2ControllerDriver(bool left_hand, std::string event_path);
-    ~Psvr2ControllerDriver() override;
+    ~Psvr2ControllerDriver();
 
     vr::EVRInitError Activate(uint32_t object_id) override;
     void Deactivate() override;
