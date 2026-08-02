@@ -18,12 +18,7 @@ add_library(driver_psvr2 MODULE
     src/pose_source.cpp
     "${OPENVR_DIR}/driverlog.cpp"
 )
-
-target_include_directories(driver_psvr2 PRIVATE
-    src
-    "${OPENVR_DIR}"
-    "${LIBPSVR2_DIR}"
-)
+target_include_directories(driver_psvr2 PRIVATE src "${OPENVR_DIR}" "${LIBPSVR2_DIR}")
 
 find_library(LIBPSVR2_STATIC NAMES libpsvr2.a PATHS "${LIBPSVR2_DIR}" NO_DEFAULT_PATH)
 if(LIBPSVR2_STATIC)
@@ -34,20 +29,30 @@ else()
     target_include_directories(driver_psvr2 PRIVATE ${PSVR2_INCLUDE_DIRS})
     target_link_libraries(driver_psvr2 PRIVATE ${PSVR2_LIBRARIES})
 endif()
-
 find_package(Threads REQUIRED)
 target_link_libraries(driver_psvr2 PRIVATE Threads::Threads)
 
 set(PKG_DIR "${CMAKE_BINARY_DIR}/psvr2")
-set_target_properties(driver_psvr2 PROPERTIES
-    PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY "${PKG_DIR}/bin/linux64"
-)
+set_target_properties(driver_psvr2 PROPERTIES PREFIX "" LIBRARY_OUTPUT_DIRECTORY "${PKG_DIR}/bin/linux64")
+
+# Optional helper: an OpenXR headless client that reads Monado's real left/right
+# grip poses and sends them to the SteamVR driver over localhost UDP.
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(OPENXR QUIET openxr)
+endif()
+if(OPENXR_FOUND)
+    add_executable(psvr2_monado_pose_bridge tools/monado_pose_bridge.cpp)
+    target_include_directories(psvr2_monado_pose_bridge PRIVATE src ${OPENXR_INCLUDE_DIRS})
+    target_link_directories(psvr2_monado_pose_bridge PRIVATE ${OPENXR_LIBRARY_DIRS})
+    target_link_libraries(psvr2_monado_pose_bridge PRIVATE ${OPENXR_LIBRARIES} Threads::Threads)
+    set_target_properties(psvr2_monado_pose_bridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PKG_DIR}/bin/linux64")
+else()
+    message(WARNING "OpenXR pkg-config package not found: Monado controller pose bridge will not be built")
+endif()
 
 add_custom_target(stage_resources ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/resources" "${PKG_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/resources" "${PKG_DIR}"
     COMMENT "Staging SteamVR driver resources at ${PKG_DIR}"
-    VERBATIM
-)
+    VERBATIM)
 add_dependencies(stage_resources driver_psvr2)
