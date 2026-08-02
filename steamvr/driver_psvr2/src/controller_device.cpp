@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <linux/input.h>
 #include <poll.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 #include "driverlog.h"
@@ -149,7 +150,7 @@ void Psvr2ControllerDriver::HandleEvent(uint16_t type, uint16_t code, int32_t va
         if (ioctl(event_fd_, EVIOCGABS(code), &info) < 0)
         {
             info.minimum = 0;
-            info.maximum = (code == ABS_Z || code == ABS_RZ) ? 255 : 255;
+            info.maximum = 255;
         }
 
         switch (code)
