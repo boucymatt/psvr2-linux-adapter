@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "controller_device.h"
 #include "hmd_device_driver.h"
 #include "openvr_driver.h"
 
@@ -11,16 +12,18 @@
 class Psvr2DeviceProvider : public vr::IServerTrackedDeviceProvider
 {
 public:
-	vr::EVRInitError Init( vr::IVRDriverContext *pDriverContext ) override;
-	void Cleanup() override;
-	const char *const *GetInterfaceVersions() override;
+    vr::EVRInitError Init(vr::IVRDriverContext *pDriverContext) override;
+    void Cleanup() override;
+    const char *const *GetInterfaceVersions() override;
 
-	void RunFrame() override;
+    void RunFrame() override;
 
-	bool ShouldBlockStandbyMode() override;
-	void EnterStandby() override;
-	void LeaveStandby() override;
+    bool ShouldBlockStandbyMode() override;
+    void EnterStandby() override;
+    void LeaveStandby() override;
 
 private:
-	std::unique_ptr<Psvr2HmdDriver> hmd_;
+    std::unique_ptr<Psvr2HmdDriver> hmd_;
+    std::unique_ptr<Psvr2ControllerDriver> left_controller_;
+    std::unique_ptr<Psvr2ControllerDriver> right_controller_;
 };
