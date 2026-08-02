@@ -8,12 +8,13 @@
 _pkgbase=psvr2
 pkgname=psvr2-dkms
 pkgver=0.1
-pkgrel=1
+pkgrel=2
 pkgdesc="Sony PlayStation VR2 headset driver (IMU/IIO, 6DoF pose, V4L2 cameras, eye tracking)"
 arch=('any')
 url="https://wiki.vronlinux.org/docs/hardware/psvr2/"
 license=('GPL2')
 depends=('dkms')
+makedepends=('patch')
 optdepends=('v4l-utils: camera testing (v4l2-ctl)'
            'libiio: high-rate buffered IMU capture (iio_readdev)'
            'xorg-xrandr: bring the headset panel up under X11')
@@ -27,6 +28,9 @@ package() {
 	# Module sources + dkms.conf for DKMS to build against.
 	install -dm755 "${dest}"
 	cp -a "${src}/kernel/." "${dest}/"
+
+	# Add temporary camera-stream diagnostics to the installed DKMS source.
+	patch -d "${dest}" -Np1 < "${src}/packaging/camera-debug.patch"
 
 	# udev rules for device-node access.
 	install -Dm644 "${src}/kernel/99-psvr2.rules" \
