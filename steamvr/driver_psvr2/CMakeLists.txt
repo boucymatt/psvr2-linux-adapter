@@ -6,9 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
-# OpenVR (openvr_driver.h + the sample driverlog helper) is vendored under
-# third_party/openvr so the driver builds from a clean checkout — see that dir's
-# README and LICENSE. libpsvr2 comes from the userspace tree.
 set(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(OPENVR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/openvr")
 set(LIBPSVR2_DIR "${REPO_ROOT}/userspace/lib" CACHE PATH "libpsvr2 source dir")
@@ -17,6 +14,7 @@ add_library(driver_psvr2 MODULE
     src/hmd_driver_factory.cpp
     src/device_provider.cpp
     src/hmd_device_driver.cpp
+    src/controller_device.cpp
     src/pose_source.cpp
     "${OPENVR_DIR}/driverlog.cpp"
 )
@@ -27,10 +25,6 @@ target_include_directories(driver_psvr2 PRIVATE
     "${LIBPSVR2_DIR}"
 )
 
-# Link libpsvr2. Prefer the in-tree static archive so the driver is
-# self-contained for SteamVR (no runtime .so path to chase); fall back to
-# pkg-config if installed. Name the archive file directly so CMake doesn't
-# resolve the shared libpsvr2.so instead.
 find_library(LIBPSVR2_STATIC NAMES libpsvr2.a PATHS "${LIBPSVR2_DIR}" NO_DEFAULT_PATH)
 if(LIBPSVR2_STATIC)
     target_link_libraries(driver_psvr2 PRIVATE "${LIBPSVR2_STATIC}")
@@ -44,19 +38,12 @@ endif()
 find_package(Threads REQUIRED)
 target_link_libraries(driver_psvr2 PRIVATE Threads::Threads)
 
-# SteamVR expects the driver as <driver>/bin/linux64/driver_<name>.so with no
-# "lib" prefix. Lay the whole package out under the build dir so it can be
-# symlinked straight into SteamVR's drivers/ directory.
 set(PKG_DIR "${CMAKE_BINARY_DIR}/psvr2")
 set_target_properties(driver_psvr2 PROPERTIES
     PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY "${PKG_DIR}/bin/linux64"
 )
 
-# Stage the resources (manifest + settings) alongside the binary. Use a separate
-# ALL target (not a POST_BUILD on the .so) so resource-only edits — e.g. the
-# manifest or default.vrsettings — re-stage every build even when the shared
-# object itself does not relink.
 add_custom_target(stage_resources ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/resources" "${PKG_DIR}"
