@@ -8,10 +8,12 @@
 
 #include "openvr_driver.h"
 
+class Psvr2HmdDriver;
+
 class Psvr2ControllerDriver : public vr::ITrackedDeviceServerDriver
 {
 public:
-    Psvr2ControllerDriver(bool left_hand, std::string event_path);
+    Psvr2ControllerDriver(bool left_hand, std::string event_path, Psvr2HmdDriver *hmd);
     ~Psvr2ControllerDriver();
 
     vr::EVRInitError Activate(uint32_t object_id) override;
@@ -29,10 +31,13 @@ private:
     void HandleEvent(uint16_t type, uint16_t code, int32_t value);
     void UpdateBoolean(vr::VRInputComponentHandle_t handle, bool value);
     void UpdateScalar(vr::VRInputComponentHandle_t handle, float value);
+    void SubmitPose();
+    vr::DriverPose_t BuildHeadRelativePose() const;
 
     bool left_hand_ = false;
     std::string event_path_;
     std::string serial_number_;
+    Psvr2HmdDriver *hmd_ = nullptr;
 
     std::atomic<bool> active_{false};
     std::atomic<uint32_t> device_index_{vr::k_unTrackedDeviceIndexInvalid};
