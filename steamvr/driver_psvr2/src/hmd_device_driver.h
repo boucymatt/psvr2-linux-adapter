@@ -10,28 +10,47 @@
 #include "pose_source.h"
 
 // Geometry of the PSVR2 panel as the compositor needs to see it. Defaults are
-// the native panel (4000x2040, two 2000x2040 eyes); they can be overridden from
-// resources/settings/default.vrsettings.
+// the native panel (4000x2040, two 2000x2040 eyes); values can be overridden
+// from resources/settings/default.vrsettings while the optical calibration is
+// being refined on real hardware.
 struct Psvr2DisplayConfig
 {
-	int32_t window_x = 0;          // top-left of the panel in the X desktop
+	int32_t window_x = 0;
 	int32_t window_y = 0;
-	int32_t window_width = 4000;   // full stereo panel
+	int32_t window_width = 4000;
 	int32_t window_height = 2040;
-	int32_t render_width = 2000;   // per-eye render target
+	int32_t render_width = 2000;
 	int32_t render_height = 2040;
-	float   fov_tan = 1.30f;       // tan(half-FOV); ~104deg total — refine from the PSVR2 RE notes
 
-	// Direct mode (default): report the panel as a real, NON-desktop display so
-	// SteamVR's compositor acquires it directly via DRM leasing (no TTY, desktop
-	// keeps running). When false, the panel is treated as an extended desktop
-	// monitor instead (the bring-up scaffold — see docs/steamvr.md).
-	bool    direct_mode = true;
+	// Per-eye asymmetric projection tangents. OpenVR expects left/top to be
+	// negative and right/bottom to be positive. PSVR2 lenses are offset from the
+	// centre of each half-panel, so a symmetric projection causes poor stereo
+	// fusion and the "two copies of the room" effect.
+	float left_eye_left_tan = -1.42f;
+	float left_eye_right_tan = 1.10f;
+	float right_eye_left_tan = -1.10f;
+	float right_eye_right_tan = 1.42f;
+	float top_tan = -1.24f;
+	float bottom_tan = 1.24f;
+
+	// Configurable radial lens correction. ComputeDistortion maps an output
+	// location back into the rendered eye texture. These defaults are a mild,
+	// usable starting profile rather than an identity transform; they remain
+	// user-adjustable until a measured PSVR2 mesh is available.
+	float distortion_k1 = 0.18f;
+	float distortion_k2 = 0.05f;
+	float distortion_k3 = 0.00f;
+	float chroma_red_scale = 1.002f;
+	float chroma_blue_scale = 0.998f;
+
+	// Optical centre in normalized coordinates within each eye viewport.
+	float left_lens_center_x = 0.53f;
+	float right_lens_center_x = 0.47f;
+	float lens_center_y = 0.50f;
+
+	bool direct_mode = true;
 };
 
-// IVRDisplayComponent: tells vrcompositor where/how to render. Extended-display
-// mode for now (the panel is a normal desktop output we light up via KMS);
-// direct mode is future work (roadmap M7).
 class Psvr2DisplayComponent : public vr::IVRDisplayComponent
 {
 public:
@@ -50,7 +69,6 @@ private:
 	Psvr2DisplayConfig config_;
 };
 
-// The HMD itself.
 class Psvr2HmdDriver : public vr::ITrackedDeviceServerDriver
 {
 public:
@@ -74,6 +92,7 @@ private:
 	std::string model_number_;
 	std::string serial_number_;
 	float display_frequency_ = 90.0f;
+	float user_ipd_meters_ = 0.064f;
 	bool direct_mode_ = true;
 
 	std::atomic<bool> active_{ false };
