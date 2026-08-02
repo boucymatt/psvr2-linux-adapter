@@ -5,19 +5,30 @@
 		"serial_number": "PSVR2-0001",
 
 		"display_frequency": 90.0,
+		"default_ipd_meters": 0.064,
 
-		"//direct": "true (default): report the panel as a real, non-desktop display",
-		"//direct2": "so SteamVR's compositor acquires it directly via DRM leasing (no",
-		"//direct3": "TTY; desktop keeps running). false: extended-desktop scaffold,",
-		"//direct4": "which needs the window_* placement below. See docs/steamvr.md.",
 		"direct_mode": true,
-
-		"//": "Extended-mode (direct_mode=false) panel placement. window_* describe",
-		"//x": "where the 4000x2040 panel sits in the X/desktop layout; set window_x",
-		"//xx": "to the panel's left edge (e.g. primary-monitor width). Ignored in direct mode.",
 		"window_x": 0,
 		"window_y": 0,
 		"window_width": 4000,
-		"window_height": 2040
+		"window_height": 2040,
+
+		"//projection": "Experimental asymmetric per-eye projection. Adjust in small steps if stereo fusion is uncomfortable.",
+		"left_eye_left_tan": -1.42,
+		"left_eye_right_tan": 1.10,
+		"right_eye_left_tan": -1.10,
+		"right_eye_right_tan": 1.42,
+		"top_tan": -1.24,
+		"bottom_tan": 1.24,
+
+		"//distortion": "Experimental radial correction until a measured PSVR2 distortion mesh is available.",
+		"distortion_k1": 0.18,
+		"distortion_k2": 0.05,
+		"distortion_k3": 0.0,
+		"chroma_red_scale": 1.002,
+		"chroma_blue_scale": 0.998,
+		"left_lens_center_x": 0.53,
+		"right_lens_center_x": 0.47,
+		"lens_center_y": 0.50
 	}
 }
