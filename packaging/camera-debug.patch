@@ -1,0 +1,63 @@
+diff --git a/psvr2_camera.c b/psvr2_camera.c
+--- a/psvr2_camera.c
++++ b/psvr2_camera.c
+@@ -78,6 +78,12 @@ static void psvr2_cam_complete(struct urb *urb)
+ 	unsigned int seq;
+ 	int ret;
+ 
++	dev_info_ratelimited(&cam->udev->dev,
++			     "camera URB status=%d actual=%u expected=%u\n",
++			     urb->status, urb->actual_length,
++			     (unsigned int)PSVR2_CAM_MODE1_XFER_SIZE);
++
+ 	switch (urb->status) {
+ 	case 0:
+ 		break;
+@@ -87,12 +93,17 @@ static void psvr2_cam_complete(struct urb *urb)
+ 	case -ESHUTDOWN:
+ 		return; /* unlinked / device gone */
+ 	default:
+-		dev_dbg(&cam->udev->dev, "camera URB error %d\n", urb->status);
++		dev_warn_ratelimited(&cam->udev->dev,
++				     "camera URB error %d\n", urb->status);
+ 		goto resubmit;
+ 	}
+ 
+-	if (urb->actual_length < PSVR2_CAM_MODE1_XFER_SIZE)
++	if (urb->actual_length < PSVR2_CAM_MODE1_XFER_SIZE) {
++		dev_warn_ratelimited(&cam->udev->dev,
++				     "short/unexpected camera frame: %u bytes\n",
++				     urb->actual_length);
+ 		goto resubmit; /* not a mode-1 frame; ignore for now */
++	}
+ 
+ 	spin_lock_irqsave(&cam->buf_lock, flags);
+ 	buf = list_first_entry_or_null(&cam->buf_list, struct psvr2_cam_buffer,
+@@ -226,6 +237,9 @@ static int psvr2_cam_start_streaming(struct vb2_queue *q, unsigned int count)
+ 
+ 	cam->sequence = 0;
+ 
++	dev_info(&cam->udev->dev,
++		 "starting camera stream with %u queued buffers\n", count);
++
+ 	ret = psvr2_cam_alloc_urbs(cam);
+ 	if (ret)
+ 		goto err_return;
+@@ -233,6 +247,10 @@ static int psvr2_cam_start_streaming(struct vb2_queue *q, unsigned int count)
+ 	ret = psvr2_cam_set_mode(cam, PSVR2_CAMERA_MODE_BOTTOM_SBS_CROPPED);
++	dev_info(&cam->udev->dev,
++		 "set camera mode 0x%x returned %d\n",
++		 PSVR2_CAMERA_MODE_BOTTOM_SBS_CROPPED, ret);
++
+ 	if (ret) {
+ 		dev_err(&cam->udev->dev, "failed to set camera mode: %d\n", ret);
+ 		goto err_urbs;
+@@ -245,6 +263,8 @@ static int psvr2_cam_start_streaming(struct vb2_queue *q, unsigned int count)
+ 				"failed to submit camera URB %d: %d\n", i, ret);
+ 			goto err_kill;
+ 		}
++		dev_info(&cam->udev->dev,
++			 "submitted camera URB %d endpoint=0x%02x\n", i, cam->ep_addr);
+ 	}
+ 
+ 	cam->streaming = true;
