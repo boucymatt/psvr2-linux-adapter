@@ -72,9 +72,7 @@ vr::EVRInitError Psvr2DeviceProvider::Init(vr::IVRDriverContext *pDriverContext)
 
     hmd_ = std::make_unique<Psvr2HmdDriver>();
     if (!vr::VRServerDriverHost()->TrackedDeviceAdded(
-            hmd_->GetSerialNumber().c_str(),
-            vr::TrackedDeviceClass_HMD,
-            hmd_.get()))
+            hmd_->GetSerialNumber().c_str(), vr::TrackedDeviceClass_HMD, hmd_.get()))
     {
         DriverLog("psvr2: failed to add HMD device");
         return vr::VRInitError_Driver_Unknown;
@@ -91,11 +89,10 @@ vr::EVRInitError Psvr2DeviceProvider::Init(vr::IVRDriverContext *pDriverContext)
 
     if (!left_path.empty())
     {
-        left_controller_ = std::make_unique<Psvr2ControllerDriver>(true, left_path);
+        left_controller_ = std::make_unique<Psvr2ControllerDriver>(true, left_path, hmd_.get());
         if (!vr::VRServerDriverHost()->TrackedDeviceAdded(
                 left_controller_->GetSerialNumber().c_str(),
-                vr::TrackedDeviceClass_Controller,
-                left_controller_.get()))
+                vr::TrackedDeviceClass_Controller, left_controller_.get()))
         {
             DriverLog("psvr2: failed to add left Sense controller");
             left_controller_.reset();
@@ -108,11 +105,10 @@ vr::EVRInitError Psvr2DeviceProvider::Init(vr::IVRDriverContext *pDriverContext)
 
     if (!right_path.empty())
     {
-        right_controller_ = std::make_unique<Psvr2ControllerDriver>(false, right_path);
+        right_controller_ = std::make_unique<Psvr2ControllerDriver>(false, right_path, hmd_.get());
         if (!vr::VRServerDriverHost()->TrackedDeviceAdded(
                 right_controller_->GetSerialNumber().c_str(),
-                vr::TrackedDeviceClass_Controller,
-                right_controller_.get()))
+                vr::TrackedDeviceClass_Controller, right_controller_.get()))
         {
             DriverLog("psvr2: failed to add right Sense controller");
             right_controller_.reset();
