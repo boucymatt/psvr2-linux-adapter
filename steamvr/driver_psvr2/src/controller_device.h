@@ -2,11 +2,14 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <thread>
 
 #include "openvr_driver.h"
+#include "pose_bridge_protocol.h"
 
 class Psvr2HmdDriver;
 
@@ -32,6 +35,9 @@ private:
     void UpdateBoolean(vr::VRInputComponentHandle_t handle, bool value);
     void UpdateScalar(vr::VRInputComponentHandle_t handle, float value);
     void SubmitPose();
+    bool OpenPoseSocket();
+    void ReceivePosePackets();
+    vr::DriverPose_t BuildPose() const;
     vr::DriverPose_t BuildHeadRelativePose() const;
 
     bool left_hand_ = false;
@@ -43,6 +49,11 @@ private:
     std::atomic<uint32_t> device_index_{vr::k_unTrackedDeviceIndexInvalid};
     std::thread input_thread_;
     int event_fd_ = -1;
+    int pose_fd_ = -1;
+
+    mutable std::mutex pose_mutex_;
+    psvr2_bridge::PosePacket bridge_pose_{};
+    std::chrono::steady_clock::time_point bridge_pose_time_{};
 
     vr::VRInputComponentHandle_t trigger_click_ = 0;
     vr::VRInputComponentHandle_t trigger_value_ = 0;
