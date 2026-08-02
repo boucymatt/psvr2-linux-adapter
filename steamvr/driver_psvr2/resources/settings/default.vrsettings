@@ -13,6 +13,10 @@
 		"window_width": 4000,
 		"window_height": 2040,
 
+		"//controllers": "Leave empty for automatic Sony 054c:0e45 evdev discovery. Set exact /dev/input/eventN paths if left/right are reversed or not found.",
+		"left_event_device": "",
+		"right_event_device": "",
+
 		"//projection": "Experimental asymmetric per-eye projection. Adjust in small steps if stereo fusion is uncomfortable.",
 		"left_eye_left_tan": -1.42,
 		"left_eye_right_tan": 1.10,
